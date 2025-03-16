@@ -123,8 +123,9 @@ remove_stirling_pdf() {
 
     # Parar e desabilitar o Docker
     echo "Parando e desabilitando o Docker..."
-    sudo systemctl stop docker.service
-    sudo systemctl disable docker.service
+    systemctl stop docker.service
+    systemctl disable docker.service
+    docker compose stop
 
     echo "Removendo o container do Stirling-PDF..."
     docker stop stirling-pdf
@@ -137,22 +138,26 @@ remove_stirling_pdf() {
 
     # Remover o diretório do Stirling-PDF
     echo "Removendo o diretório /opt/stirling-pdf..."
-    sudo rm -rf /opt/stirling-pdf
+    rm -rf /opt/stirling-pdf
 
     # Remover pacotes do Docker e dependências
     echo "Removendo pacotes do Docker e dependências..."
-    sudo apt remove --purge -y docker.io
-    sudo apt autoremove -y
-    sudo rm -rf /var/lib/docker
+    apt remove --purge -y docker.io docker-compose
+    apt autoremove -y
+    rm -rf /var/lib/docker
 
     # Remover o atalho do menu de aplicativos
     echo "Removendo o atalho do menu de aplicativos..."
-    sudo rm -f /usr/share/applications/stirling-pdf.desktop
+    rm -f /usr/share/applications/stirling-pdf.desktop
 
     # Remover o Tesseract
     echo "Removendo o Tesseract..."
-    sudo apt remove --purge -y tesseract-ocr*
-    sudo rm -rf /usr/share/tessdata/
+    apt remove --purge -y tesseract-ocr*
+    rm -rf /usr/share/tessdata/
+
+    #Limpando vestigios
+    sudo rm /usr/local/bin/docker-compose
+    sudo rm /usr/local/bin/docker
 
     echo "Remoção do Stirling-PDF, Docker e atalho concluída com sucesso!"
 }
@@ -176,31 +181,83 @@ remove_stirling_pdf_only() {
 
     # Remover o diretório do Stirling-PDF
     echo "Removendo o diretório /opt/stirling-pdf..."
-    sudo rm -rf /opt/stirling-pdf
+    rm -rf /opt/stirling-pdf
 
     # Remover o atalho do menu de aplicativos
     echo "Removendo o atalho do menu de aplicativos..."
-    sudo rm -f /usr/share/applications/stirling-pdf.desktop
+    rm -f /usr/share/applications/stirling-pdf.desktop
 
     # Remover o ícone do sistema
     echo "Removendo o ícone..."
-    sudo rm -f /usr/share/icons/stirling-pdf.png
+    rm -f /usr/share/icons/stirling-pdf.png
 
     # Remover o Tesseract
     echo "Removendo o Tesseract..."
-    sudo apt remove --purge -y tesseract-ocr*
-    sudo rm -rf /usr/share/tessdata/
+    apt remove --purge -y tesseract-ocr*
+    rm -rf /usr/share/tessdata/
 
     echo "Remoção do Stirling-PDF, Tesseract e arquivos relacionados concluída com sucesso!"
 }
 
-# Pergunta ao usuário se deseja instalar, remover completamente ou remover parcialmente
+# Pergunta ao usuário se deseja instalar, remover completamente, remover parcialmente ou atualizar o Docker Compose
 echo "Escolha uma opção:"
 echo "1 - Instalar Stirling-PDF"
 echo "2 - Remover Stirling-PDF e Docker"
 echo "3 - Remover apenas o Stirling-PDF e Tesseract --Mantendo o Docker no sistema--"
+echo "4 - Atualizar Docker Compose (Ubuntu)"
 echo "0 - Cancelar e sair"
 read -p "Digite o número da opção desejada: " opcao
+
+atualizar_docker_compose() {
+    # Verifica se o Docker Compose está instalado
+    if ! command -v docker-compose &>/dev/null && ! command -v docker &>/dev/null; then
+        echo "Docker Compose não está instalado!"
+        echo "Instale-o primeiro antes de tentar atualizar."
+        return
+    fi
+
+    # Obtém a versão atual instalada (compatível com "docker-compose" e "docker compose")
+    if command -v docker-compose &>/dev/null; then
+        versao_atual=$(docker-compose version --short)
+    elif command -v docker &>/dev/null; then
+        versao_atual=$(docker compose version --short)
+    fi
+
+    # Exibe a versão atual do Docker Compose
+    echo "Versão atual do Docker Compose: $versao_atual"
+
+    # Obtém a versão mais recente disponível no GitHub
+    versao_nova=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep '"tag_name":' | cut -d '"' -f 4 | sed 's/v//')
+
+    if [[ -z "$versao_nova" ]]; then
+        echo "Não foi possível obter a versão mais recente. Tente novamente mais tarde."
+        return
+    fi
+
+    # Exibe a versão mais recente disponível
+    echo "Versão mais recente disponível: $versao_nova"
+
+    # Compara as versões
+    if [[ "$versao_atual" == "$versao_nova" ]]; then
+        echo "Você já está na versão mais recente do Docker Compose!"
+        return
+    fi
+
+    # Pergunta se o usuário deseja atualizar
+    read -p "Deseja atualizar para a versão $versao_nova? (s/n): " confirmacao
+    if [[ "$confirmacao" != "s" ]]; then
+        echo "Atualização cancelada."
+        return
+    fi
+
+    # Atualiza o Docker Compose
+    echo "Atualizando Docker Compose para a versão mais recente..."
+    sudo curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+
+    echo "Atualização concluída!"
+    docker-compose version
+}
 
 case $opcao in
     1)
@@ -211,6 +268,9 @@ case $opcao in
         ;;
     3)
         remove_stirling_pdf_only
+        ;;
+    4)
+        atualizar_docker_compose
         ;;
     0)
         echo "Operação cancelada. Saindo..."
