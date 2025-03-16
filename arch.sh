@@ -10,7 +10,7 @@ install_stirling_pdf() {
     # Verifica se o usuário é root
     if [[ $EUID -ne 0 ]]; then
         echo "Este script precisa ser executado como root ou com sudo."
-        sudo sh ./arch.sh
+        exit 1
     fi
 
     # Verificar se o ícone stirling-pdf.png está na pasta do script
@@ -106,8 +106,8 @@ remove_stirling_pdf() {
 
     # Parar e desabilitar o Docker
     echo "Parando e desabilitando o Docker..."
-    sudo systemctl stop docker.service
-    sudo systemctl disable docker.service
+    systemctl stop docker.service
+    systemctl disable docker.service
 
     echo "Removendo o container do Stirling-PDF..."
     docker stop stirling-pdf
@@ -120,21 +120,21 @@ remove_stirling_pdf() {
 
     # Remover o diretório do Stirling-PDF
     echo "Removendo o diretório /opt/stirling-pdf..."
-    sudo rm -rf /opt/stirling-pdf
+    rm -rf /opt/stirling-pdf
 
     # Remover pacotes do Docker e dependências
     echo "Removendo pacotes do Docker e dependências..."
-    sudo pacman -Rncs docker docker-compose --noconfirm
-    sudo rm -rf /var/lib/docker
+    pacman -Rncs docker docker-compose --noconfirm
+    rm -rf /var/lib/docker
 
     # Remover o atalho do menu de aplicativos
     echo "Removendo o atalho do menu de aplicativos..."
-    sudo rm -f /usr/share/applications/stirling-pdf.desktop
+    rm -f /usr/share/applications/stirling-pdf.desktop
 
     # Remover o Tesseract
     echo "Removendo o Tesseract..."
-    sudo pacman -Rncs tesseract --noconfirm
-    sudo rm -rf /usr/share/tessdata/
+    pacman -Rncs tesseract --noconfirm
+    rm -rf /usr/share/tessdata/
 
     echo "Remoção do Stirling-PDF, Docker e atalho concluída com sucesso!"
 }
@@ -158,20 +158,20 @@ remove_stirling_pdf_only() {
 
     # Remover o diretório do Stirling-PDF
     echo "Removendo o diretório /opt/stirling-pdf..."
-    sudo rm -rf /opt/stirling-pdf
+    rm -rf /opt/stirling-pdf
 
     # Remover o atalho do menu de aplicativos
     echo "Removendo o atalho do menu de aplicativos..."
-    sudo rm -f /usr/share/applications/stirling-pdf.desktop
+    rm -f /usr/share/applications/stirling-pdf.desktop
 
     # Remover o ícone do sistema
     echo "Removendo o ícone..."
-    sudo rm -f /usr/share/icons/stirling-pdf.png
+    rm -f /usr/share/icons/stirling-pdf.png
 
     # Remover o Tesseract
     echo "Removendo o Tesseract..."
-    sudo pacman -Rncs tesseract --noconfirm
-    sudo rm -rf /usr/share/tessdata/
+    pacman -Rncs tesseract --noconfirm
+    rm -rf /usr/share/tessdata/
 
     echo "Remoção do Stirling-PDF, Tesseract e arquivos relacionados concluída com sucesso!"
 }
