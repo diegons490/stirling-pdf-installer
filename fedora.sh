@@ -30,10 +30,28 @@ install_stirling_pdf() {
     # Baixar e instalar manualmente os dados do Tesseract para português do Brasil
     mkdir -p /usr/share/tessdata
     wget -O /usr/share/tessdata/por.traineddata "https://github.com/tesseract-ocr/tessdata_best/raw/main/por.traineddata"
+    wget -O /usr/share/tessdata/eng.traineddata "https://github.com/tesseract-ocr/tessdata_best/raw/main/eng.traineddata"
+
 
     # Habilitar e iniciar Docker
     systemctl enable --now docker.service
     systemctl enable --now containerd.service
+
+    # Loop para aguardar até o Docker estar ativo
+    while ! sudo systemctl is-active --quiet docker.service; do
+        echo "Aguardando o Docker iniciar..."
+        sleep 2  # Aguarda 2 segundos antes de verificar novamente
+    done
+
+    # Garantir que o Docker foi iniciado com sucesso
+    echo "Docker está ativo e em execução!"
+
+    # Verificar se o container stirling-pdf já existe e removê-lo
+    echo "Verificando se o container stirling-pdf já existe..."
+    if sudo docker ps -a --format '{{.Names}}' | grep -q "^stirling-pdf$"; then
+        echo "Removendo container antigo stirling-pdf..."
+        sudo docker rm -f stirling-pdf
+    fi
 
     # Criar diretório para o Stirling-PDF
     mkdir -p /opt/stirling-pdf && cd /opt/stirling-pdf
@@ -104,8 +122,8 @@ remove_stirling_pdf() {
 
     # Parar e desabilitar o Docker
     echo "Parando e desabilitando o Docker..."
-    sudo systemctl stop docker.service
-    sudo systemctl disable docker.service
+    systemctl stop docker.service
+    systemctl disable docker.service
 
     echo "Removendo o container do Stirling-PDF..."
     docker stop stirling-pdf
@@ -118,20 +136,20 @@ remove_stirling_pdf() {
 
     # Remover o diretório do Stirling-PDF
     echo "Removendo o diretório /opt/stirling-pdf..."
-    sudo rm -rf /opt/stirling-pdf
+    rm -rf /opt/stirling-pdf
 
     # Remover pacotes do Docker e dependências
     echo "Removendo pacotes do Docker e dependências..."
-    sudo dnf remove -y docker docker-compose docker-cli docker-buildx
-    sudo rm -rf /var/lib/docker
+    dnf remove -y docker docker-compose docker-cli docker-buildx
+    rm -rf /var/lib/docker
     # Remover o atalho do menu de aplicativos
     echo "Removendo o atalho do menu de aplicativos..."
-    sudo rm -f /usr/share/applications/stirling-pdf.desktop
+    rm -f /usr/share/applications/stirling-pdf.desktop
 
     # Remover o Tesseract
     echo "Removendo o Tesseract..."
-    sudo dnf remove -y tesseract
-    sudo rm -rf /usr/share/tessdata/
+    dnf remove -y tesseract
+    rm -rf /usr/share/tessdata/
 
     echo "Remoção do Stirling-PDF, Docker e atalho concluída com sucesso!"
 }
@@ -155,20 +173,20 @@ remove_stirling_pdf_only() {
 
     # Remover o diretório do Stirling-PDF
     echo "Removendo o diretório /opt/stirling-pdf..."
-    sudo rm -rf /opt/stirling-pdf
+    rm -rf /opt/stirling-pdf
 
     # Remover o atalho do menu de aplicativos
     echo "Removendo o atalho do menu de aplicativos..."
-    sudo rm -f /usr/share/applications/stirling-pdf.desktop
+    rm -f /usr/share/applications/stirling-pdf.desktop
 
     # Remover o ícone do sistema
     echo "Removendo o ícone..."
-    sudo rm -f /usr/share/icons/stirling-pdf.png
+    rm -f /usr/share/icons/stirling-pdf.png
 
     # Remover o Tesseract
     echo "Removendo o Tesseract..."
-    sudo dnf remove -y tesseract
-    sudo rm -rf /usr/share/tessdata/
+    dnf remove -y tesseract
+    rm -rf /usr/share/tessdata/
 
     echo "Remoção do Stirling-PDF, Tesseract e arquivos relacionados concluída com sucesso!"
 }
