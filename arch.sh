@@ -37,6 +37,22 @@ install_stirling_pdf() {
     systemctl enable --now docker.service
     systemctl enable --now containerd.service
 
+    # Loop para aguardar até o Docker estar ativo
+    while ! sudo systemctl is-active --quiet docker.service; do
+        echo "Aguardando o Docker iniciar..."
+        sleep 2  # Aguarda 2 segundos antes de verificar novamente
+    done
+
+    # Garantir que o Docker foi iniciado com sucesso
+    echo "Docker está ativo e em execução!"
+
+    # Verificar se o container stirling-pdf já existe e removê-lo
+    echo "Verificando se o container stirling-pdf já existe..."
+    if sudo docker ps -a --format '{{.Names}}' | grep -q "^stirling-pdf$"; then
+        echo "Removendo container antigo stirling-pdf..."
+        sudo docker rm -f stirling-pdf
+    fi
+
     # Criar diretório para o Stirling-PDF
     mkdir -p /opt/stirling-pdf && cd /opt/stirling-pdf
 
